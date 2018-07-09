@@ -29,9 +29,9 @@ This function retrieves the time series for a list of coordinates.
 }
 \examples{
 \donttest{
-ts.server <-  WTSS("http://www.dpi.inpe.br/tws/wtss")
+ts.server <-  WTSS("http://www.esensing.dpi.inpe.br/wtss/")
 bands <- c("ndvi","evi")
 coords <- list (c(-45.00, -12.00), c(-46.00, -11.00))
-tsList <- listTimeSeries(ts.server, "mod13q1_512", bands, coords, "2000-02-18", "2016-12-18")
+tsList <- listTimeSeries(ts.server, "MOD13Q1", bands, coords, "2000-02-18", "2016-12-18")
 }
 }

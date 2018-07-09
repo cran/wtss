@@ -1,7 +1,7 @@
 Package: wtss
 Title: An R Client for a Web Time-Series Service
-Version: 1.0.0
-Date: 2017-12-14
+Version: 1.1.0
+Date: 2018-07-09
 Authors@R: c(person("Victor", "Maus", role = c("aut"), email ="vwmaus1@gmail.com"), 
              person("Pedro", "Andrade", role = c("aut"), email ="pedro.andrade@inpe.br"), 
              person("Alber", "Sanchez", role = c("aut"),email ="alber.ipia@inpe.br"), 
@@ -22,7 +22,7 @@ BugReports: https://github.com/e-sensing/wtss/issues
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2017-12-21 10:41:32 UTC; gilberto
+Packaged: 2018-07-09 20:14:58 UTC; gilbertocamara
 Author: Victor Maus [aut],
   Pedro Andrade [aut],
   Alber Sanchez [aut],
@@ -30,4 +30,4 @@ Author: Victor Maus [aut],
   Gilberto Ribeiro [aut],
   Gilberto Camara [aut, cre]
 Repository: CRAN
-Date/Publication: 2017-12-21 13:30:45 UTC
+Date/Publication: 2018-07-09 20:40:03 UTC

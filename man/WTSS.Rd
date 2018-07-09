@@ -29,7 +29,7 @@ No notes
 }
 
 \examples{
-ts.server = WTSS("http://www.dpi.inpe.br/tws/wtss")
+ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
 ts.server
 }
 \author{

@@ -19,7 +19,7 @@ describeCoverage(object, coverages)
 Describe coverage
 }
 \examples{
-ts.server = WTSS("http://www.dpi.inpe.br/tws/wtss")
-cv = describeCoverage(ts.server, c("mod13q1_512"))
+ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
+cv = describeCoverage(ts.server, c("MOD13Q1"))
 
 }

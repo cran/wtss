@@ -93,7 +93,7 @@ setMethod(
 #' @docType methods
 #' @export
 #' @examples
-#' ts.server = WTSS("http://www.dpi.inpe.br/tws/wtss")
+#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
 #' ts.server
 WTSS <- function(serverUrl) {
   
@@ -175,7 +175,7 @@ setMethod("setServerUrl","WTSS", function(object, aServerUrl) {
 #' @docType methods
 #' @export
 #' @examples
-#' ts.server = WTSS("http://www.dpi.inpe.br/tws/wtss")
+#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
 #' coverages = listCoverages(ts.server)
 #' 
 setGeneric("listCoverages",function(object){standardGeneric ("listCoverages")})
@@ -222,8 +222,8 @@ setMethod("listCoverages","WTSS", function(object) {
 #' @docType methods
 #' @export
 #' @examples
-#' ts.server = WTSS("http://www.dpi.inpe.br/tws/wtss")
-#' cv = describeCoverage(ts.server, c("mod13q1_512"))
+#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
+#' cv = describeCoverage(ts.server, c("MOD13Q1"))
 #' 
 setGeneric("describeCoverage",function(object,coverages){standardGeneric("describeCoverage")})
 
@@ -282,10 +282,10 @@ setMethod("describeCoverage","WTSS", function(object,coverages) {
 #' @export
 #' @examples
 #' \donttest{
-#' ts.server <-  WTSS("http://www.dpi.inpe.br/tws/wtss")
+#' ts.server <-  WTSS("http://www.esensing.dpi.inpe.br/wtss/")
 #' bands <- c("ndvi","evi")
 #' coords <- list (c(-45.00, -12.00), c(-46.00, -11.00))
-#' tsList <- listTimeSeries(ts.server, "mod13q1_512", bands, coords, "2000-02-18", "2016-12-18")
+#' tsList <- listTimeSeries(ts.server, "MOD13Q1", bands, coords, "2000-02-18", "2016-12-18")
 #'}
 setGeneric("listTimeSeries",function(object,coverages,attributes,coordinates,start_date,end_date){standardGeneric("listTimeSeries")})
 
@@ -324,8 +324,8 @@ setMethod("listTimeSeries","WTSS", function(object,coverages,attributes,coordina
 #' @export
 #' @examples
 #' \donttest{
-#' ts.server = WTSS("http://www.dpi.inpe.br/tws/wtss")
-#' ts = timeSeries(ts.server, "mod13q1_512", c("ndvi","evi"), 
+#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
+#' ts = timeSeries(ts.server, "MOD13Q1", c("ndvi","evi"), 
 #'                 longitude = -45.00, latitude  = -12.00,
 #'                 start_date = "2000-02-18", end_date = "2016-12-18")
 #'}
