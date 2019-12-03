@@ -1,486 +1,126 @@
-#' The WTSS class
-#'
-#' Use this class for creating a connection to a Web Time Series Service (WTSS)
-#'   
-#'@section Slots :
-#' \describe{
-#' \item{\code{serverUrl}:}{Object of class \code{"character"}, URL of the server.}
-#' \item{\code{listCoverages}:}{Object of class \code{"character"}, list of coverages.}
-#' }
-#'
-#' @note No notes
+#' @title Creates a WTSS object
 #' @name WTSS
-#' @aliases WTSS-class
-#' @exportClass WTSS
-#' @author Victor Maus, Alber Sanchez, Luiz Fernando Assis, Pedro Andrade, Gilberto Ribeiro
-#' @import jsonlite
-#' @import methods
-#' @import RCurl
-#' @import roxygen2
-#' @import lubridate
-#' @import zoo
-setClass(
-  
-  # Set the name for the class
-  Class = "WTSS",
-  
-  # Define the slots
-  slots = c(
-    serverUrl = "character",
-    listCoverages = "character"
-  ),
-  
-  # Set the default values for the slots.
-  prototype=list(),
-  
-  # Test if the data is consistent. Only called if no initialize function is defined.
-  validity = function(object) {
+#'
+#' @description Creates a connection to a WTSS server.
+#'
+#' @param URL        URL of the service provider.
+#' @return  R WTSS object associated to the service.
+#' @examples {
+#' wtss <-  wtss::WTSS("http://www.esensing.dpi.inpe.br/wtss/")
+#' }
+#' @export
+WTSS <- function(URL) {
     
-    if(length(object@serverUrl) != 1) {
-      stop ("[WTSS: validation] Invalid server URL.")
-    }
-    
-    if(nchar(object@serverUrl) <= 1) {
-      stop ("[WTSS: validation] Invalid server URL.")
-    }
-    
-    return(TRUE)
-    
+  # create a list to store the metadata
+  wtss.obj <- list(url = character(), coverages = character(), 
+                   description = list())
+  
+  wtss.obj$url <- URL
+  
+  wtss.obj$coverages <- .wtss_list_coverages(wtss.obj)
+  
+  if (purrr::is_null(wtss.obj$coverages)) {
+    message("WTSS server not responding - please check URL")
+    return(NULL)
   }
-  
-)
+  class(wtss.obj) <- append(class(wtss.obj), "wtss", after = 0)
+  message(paste0("Connected to WTSS server at ", URL))
+  return(wtss.obj)
+}
 
-#*******************************************************
-#CONSTRUCTOR
-#*******************************************************
-setMethod(
-  
-  # initialize function
-  f = "initialize",
-  
-  # Method signature
-  signature = "WTSS",
-  
-  # Function definition
-  definition = function(.Object, serverUrl) {
-    
-    # check whether the url is missing or not
-    if(!missing(serverUrl)) {
-      
-      .Object@serverUrl <- serverUrl
-      arrays <- .listCoverages(.Object)
-      
-      if(class(arrays) == "try-error")
-        stop(arrays)
-      else
-        .Object@listCoverages <- arrays
-      
-      validObject(.Object)
-      
+#' @title List the coverages available in the WTSS service
+#' @name list_coverages
+#'
+#' @description Lists coverages available in the WTSS service 
+#'
+#' @param wtss.obj       WTSS object
+#' @return               NULL if fails, TRUE if works
+#' @examples {
+#' wtss <-  WTSS("http://www.esensing.dpi.inpe.br/wtss/")
+#' list_coverages(wtss)
+#' }
+#' @export
+list_coverages <- function(wtss.obj) {
+    if (purrr::is_null(wtss.obj) || purrr::is_null(wtss.obj$coverages)) {
+        message("WTSS - server URL not working") 
+        return(NULL)
     }
     else {
-      .Object@serverUrl <- character(0)
-    }
+      # initial message
+      cat(paste("Object of Class WTSS\n"))
     
-    return(.Object)
-  }
-)
-
-#' Creates a WTSS object
-#'
-#' @param serverUrl A server URL
-#' @rdname WTSS
-#' @docType methods
-#' @export
-#' @examples
-#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
-#' ts.server
-WTSS <- function(serverUrl) {
-  
-  methods::new (Class="WTSS", serverUrl = serverUrl)
-  
-}
-
-#*******************************************************
-#SHOW
-#*******************************************************
-setMethod(
-  
-  # Name of the function
-  f = "show", 
-  
-  # Method signature
-  signature = "WTSS", 
-  
-  # Stylish print of the objects
-  definition = function(object) {
+      # print serverUrl
+      cat(paste("server-url: ",paste(wtss.obj$url),  "\n"))
     
-    # initial message
-    cat(paste("Object of Class WTSS\n\n"))
-    
-    # print serverUrl
-    cat(paste("serverUrl: ",paste(object@serverUrl),  "\n"))
-    
-    # print listCoverages
-    cat("listCoverages: ")
-    cat(paste(object@listCoverages), " ")
-    
-    return(invisible())
-  }
-)
-
-setGeneric(name="show", def=function(object){standardGeneric("show")})
-
-#*******************************************************
-#ACCESSORS
-#*******************************************************
-
-#' Returns the object's server URL
-#'
-#' @param object A WTSS object
-#' @docType methods
-#' @aliases getServerUrl-generic
-#' @export
-
-setGeneric("getServerUrl",function(object){standardGeneric ("getServerUrl")})
-
-#' @rdname getServerUrl
-setMethod("getServerUrl","WTSS", function(object) {
-  
-  if(substr(object@serverUrl,nchar(object@serverUrl),nchar(object@serverUrl))!="/")
-    return(paste(object@serverUrl,"/",sep=""))
-  
-  return(object@serverUrl)
-  
-})
-
-#' Sets the object's server URL
-#'
-#' @param object A WTSS object
-#' @param aServerUrl A character representing the server URL.
-#' @docType methods
-#' @export
-setGeneric("setServerUrl",function(object, aServerUrl){standardGeneric ("setServerUrl")})
-
-#' @rdname  setServerUrl
-setMethod("setServerUrl","WTSS", function(object, aServerUrl) {
-  
-  object@serverUrl <- aServerUrl
-  
-})
-
-#' List coverages 
-#'
-#' @param object A WTSS object
-#' @docType methods
-#' @export
-#' @examples
-#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
-#' coverages = listCoverages(ts.server)
-#' 
-setGeneric("listCoverages",function(object){standardGeneric ("listCoverages")})
-
-#' @rdname  listCoverages
-setMethod("listCoverages","WTSS", function(object) {
-  
-  .listCoverages(object) 
-  
-})
-
-.listCoverages <- function(object) {
-  
-  url <- getServerUrl(object)
-  items <- 0
-  class(items) <- "try-error"
-  ce <- 0
-  
-  if (length(url) == 1 && nchar(url) > 1) {
-    
-    # concat list_coverages to the service URL 
-    request <- paste(url,"list_coverages",sep="")
-    
-    # try only 10 times (avoid time out connection)
-    while(class(items) == "try-error" & ce < 10) {
-      items <- .parseJSON(.sendRequest(request))
-      ce <- ce + 1
-    }
-    
-    # if the server does not answer any item
-    if (class(items) == "try-error")
-      return(items)
-      
-    # if the server answers correctly
-    return(unlist(items, use.names = FALSE))
-    
-  }
-}
-
-#' Describe coverage
-#'
-#' @param object A WTSS object
-#' @param coverages A character vector of coverage names
-#' @docType methods
-#' @export
-#' @examples
-#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
-#' cv = describeCoverage(ts.server, c("MOD13Q1"))
-#' 
-setGeneric("describeCoverage",function(object,coverages){standardGeneric("describeCoverage")})
-
-
-#' @rdname  describeCoverage
-setMethod("describeCoverage","WTSS", function(object,coverages) {
-  .describeCoverage(object,coverages) 
-})
-
-.describeCoverage <- function(object,coverages) {
-  
-  url <- getServerUrl(object)
-  items <- 0
-  class(items) <- "try-error"
-  ce <- 0
-  
-  if(length(url) == 1 && nchar(url) > 1) {
-    
-    out <- lapply(coverages, function(cov) {
-        
-        # concat describe_coverage according to a name into the service URL 
-        request <- paste(url,"describe_coverage?name=", cov, sep="")
-        
-        # avoid time out connection 
-        while(class(items) == "try-error" & ce < 10) {
-           items <- .parseJSON(.sendRequest(request))
-           ce <- ce + 1
-        }
-        
-        # if the server does not answer any item
-        if (class(items) == "try-error")
-          return(items)
-        
-        return(items)
-    })
-    
-    names(out) <- coverages
-    
-    return(out)
-  
-  }
-  
-}
-
-#' Get list of time series
-#'
-#' @description This function retrieves the time series for a list of coordinates.
-#'
-#' @param object Either a WTSS object or a server URL.
-#' @param coverages Either a list of coverages and attributes such as retrieved by describe_coverage() or a character with the coverage name.
-#' @param attributes A character vector of dataset names.
-#' @param coordinates A list or data frame of longitude latitude coordinates in WGS84 coordinate system.
-#' @param start_date A character with the start date in the format yyyy-mm-dd or yyyy-mm depending on the coverage.
-#' @param end_date A character with the end date in the format yyyy-mm-dd or yyyy-mm depending on the coverage.
-#' @docType methods
-#' @export
-#' @examples
-#' \donttest{
-#' ts.server <-  WTSS("http://www.esensing.dpi.inpe.br/wtss/")
-#' bands <- c("ndvi","evi")
-#' coords <- list (c(-45.00, -12.00), c(-46.00, -11.00))
-#' tsList <- listTimeSeries(ts.server, "MOD13Q1", bands, coords, "2000-02-18", "2016-12-18")
-#'}
-setGeneric("listTimeSeries",function(object,coverages,attributes,coordinates,start_date,end_date){standardGeneric("listTimeSeries")})
-
-#' @rdname  listTimeSeries
-setMethod("listTimeSeries","WTSS", function(object,coverages,attributes,coordinates,start_date,end_date) {
-  
-  # check type of the list of coordinates 
-  if( is.data.frame(coordinates) | is.matrix(coordinates))
-    coordinates <- lapply(1:dim(coordinates)[1], function(i) coordinates[i,])
-  
-  if(!is.list(coordinates))
-    stop("Missing a list. Please insert a list of longitude latitude coordinates in WGS84 coordinate system.")
-  
-  out <- lapply(coordinates, function(coords) {
-    longitude <- coords[1]
-    latitude <- coords[2]
-    items <- .timeSeries(object,coverages,attributes,longitude,latitude,start_date,end_date)
-  })
-  
-  return(out)
-  
-})
-
-#' Get time series
-#'
-#' @description This function retrieves the time series for a pair of coordinates.es
-#' 
-#' @param object Either a WTSS object or a server URL
-#' @param coverages Either a list of coverages and attributes such as retrieved by describe_coverage() or a character with the coverage name.
-#' @param attributes A character vector of dataset names.
-#' @param longitude A longitude in WGS84 coordinate system.
-#' @param latitude A latitude in WGS84 coordinate system.
-#' @param start_date A character with the start date in the format yyyy-mm-dd or yyyy-mm depending on the coverage.
-#' @param end_date A character with the end date in the format yyyy-mm-dd or yyyy-mm depending on the coverage.
-#' @docType methods
-#' @export
-#' @examples
-#' \donttest{
-#' ts.server = WTSS("http://www.esensing.dpi.inpe.br/wtss/")
-#' ts = timeSeries(ts.server, "MOD13Q1", c("ndvi","evi"), 
-#'                 longitude = -45.00, latitude  = -12.00,
-#'                 start_date = "2000-02-18", end_date = "2016-12-18")
-#'}
-setGeneric("timeSeries",function(object,coverages,attributes,longitude,latitude,start_date,end_date){standardGeneric("timeSeries")})
-
-#' @rdname  timeSeries
-setMethod("timeSeries","WTSS", function(object,coverages,attributes,longitude,latitude,start_date,end_date) {
-  
-  .timeSeries(object,coverages,attributes,longitude,latitude,start_date,end_date)
-  
-})
-
-.timeSeries <- function(object,coverages,attributes,longitude,latitude,start_date,end_date) {
-  
-  if(missing(object))
-    stop("Missing either a WTSS object or a server URL.")
-  
-  items <- 0
-  class(items) <- "try-error"
-  ce <- 0
-  
-  url <- object
-  
-  if(class(object)=="WTSS")
-    url <- getServerUrl(object)
-  
-  if(length(url) == 1 && nchar(url) > 1) {
-    
-    if(is.list(coverages)) {
-      
-      out <- lapply(names(coverages), function(cov) {
-        
-        request <- paste(url,"time_series?coverage=",cov,"&attributes=",paste(attributes, collapse=","),
-                         "&longitude=",longitude,"&latitude=",latitude,
-                         "&start_date=",start_date,"&end_date=",end_date,sep="")
-        
-        # try only 10 times (avoid time out connection)
-        while(class(items) == "try-error" & ce < 10) {
-          items <- .parseJSON(.sendRequest(request))
-          ce <- ce + 1
-        }
-        
-        # if the server does not answer any item
-        if (class(items) == "try-error") {
-          stop("\n Server connection timeout. Verify the URL or try again later.")
-          return(items)
-        }
-        
-        # time series processing method call 
-        timeseries <- .timeSeriesProcessing(items)
-        
-        return(timeseries)
-        
-      })
-      
-      names(out) <- names(coverages)
-      
-      return(out)
-      
+      # print coverages
+      cat("Coverages: ")
+      cat(paste(wtss.obj$coverages), " ")
     } 
-    else 
-        if(is.character(coverages) && length(coverages)==1 && is.character(attributes)) {
-          
-            request <- paste(url,"time_series?coverage=",coverages,"&attributes=",paste(attributes, collapse=","),
-                             "&longitude=",longitude,"&latitude=",latitude,
-                             "&start_date=",start_date,"&end_date=",end_date,sep="")
-            
-            # try only 10 times (avoid time out connection)
-            while(class(items) == "try-error" & ce < 10) {
-              items <- .parseJSON(.sendRequest(request))
-              ce <- ce + 1
-            }
-      
-            # if the server does not answer any item
-            if (class(items) == "try-error") {
-              stop("\n Server connection timeout. Verify the URL or try again later.")
-              return(items)
-            }
-            
-            out <- list(.timeSeriesProcessing(items))
-            
-            names(out) <- coverages
-            
-            return(out)
+  
+    return(invisible(TRUE))
+}
+
+#' @title Retrieves the list of cubes from the URL server
+#' @name  describe_coverage
+#'
+#' @description Contacts the WTSS server to describe one  coverages
+#' @param wtss.obj    A WTSS object
+#' @param name        A character vector of coverage names
+#' @param .print      Print the coverage description
+#' @return            NULL if fails, TRUE if works
+#' 
+#' @examples
+#' wtss  <-  WTSS("http://www.esensing.dpi.inpe.br/wtss/")
+#' describe_coverage(wtss, wtss$coverages[1])
+#' @export
+describe_coverage <- function(wtss.obj, name, .print = TRUE) {
+    assertthat::assert_that(length(name) == 1, 
+                msg = "WTSS - select only one coverage to describe")
+    result <- NULL
+    # concat describe_coverage according to a name into the service URL 
+    request <- paste(wtss.obj$url,"/describe_coverage?name=", name, sep = "")
+    ce <- 0
+    # avoid time out connection 
+    while (purrr::is_null(result) & ce < 10) {
+        result <- .wtss_parse_json(.wtss_send_request(request))
+        ce <- ce + 1
+        # if the server does not answer any item, return NULL
+        if (purrr::is_null(result)) {
+            message("WTSS - coverage information not available")
+            return(NULL)
         }
-        else {
-            stop("Missing either a list of coverages and attributes such as retrieved by describe_coverage()
-           or a character with the coverage name and a character vector of dataset names.")
+    }
+    # convert the coverage description into a tibble
+
+    cov.tb <- .wtss_coverage_description(wtss.obj, result)
+    
+    # print the content of the coverage
+    if (.print)
+      .wtss_print_coverage(cov.tb)
+
+    # check if the description is already associated to the WTSS object
+    if (length(wtss.obj$description) != 0) {
+        if (!(name %in% wtss.obj$description$name)) {
+            # add the coverage description
+            cov.tb       <- dplyr::bind_rows(wtss.obj$description, cov.tb)
+            # export the description
+            eval.parent(substitute(wtss.obj$description <- cov.tb))  
         }
-  }
-  
-  return(NULL)
-  
+    }
+    else
+        # description list empty 
+        # export the description
+        eval.parent(substitute(wtss.obj$description <- cov.tb))  
+      
+    # inform uses that WTSS object has the description
+    if (.print)
+      message("Coverage description saved in WTSS object")
+    
+    return(invisible(TRUE))
 }
 
-.timeSeriesProcessing <- function(items) {
-  
-  attributes_list <- list(items$result$attributes)
-  
-  attributes.processed <- lapply(attributes_list, function(subdataset) {
-      # assign attribute values 
-      value <- subdataset$values
-      
-      # assign values to dataframe
-      value <- data.frame(value, stringsAsFactors = FALSE)
-      
-      # dataset names to the values vectors 
-      names(value) <- subdataset$attribute
 
-      return(value)
-      
-  })
-  
-  attributes.processed <- data.frame(attributes.processed, stringsAsFactors = FALSE)
-  
-  # convert string into date format
-  timeline <- unlist(strsplit(items$result$timeline, split=" "))
-  
-  # check date format
-  format <- lubridate::guess_formats(timeline[1], c("%Y-%m-%d", "%Y-%m"))
-  
-  # if monthly date
-  if(any(format == "%Y-%m"))
-      timeline = as.Date(zoo::as.yearmon(timeline))
-  else # if weekly or daily date
-      if(any(format == "%Y-%m-%d"))
-        timeline = as.Date(timeline, format)
-  
-  return(list(center_coordinate = data.frame(longitude=items$result$coordinates$longitude, latitude=items$result$coordinates$latitude), 
-              attributes = zoo::zoo(attributes.processed, timeline)))
-  
-}
 
-.sendRequest <- function(request) {
-  
-  # check if URL exists and perform the request
-  tryCatch(response <- RCurl::getURL(request), error = function(e) {
-    e$message <- paste("HTTP request failed. The URL server may be incorrect or the service may be temporarily unavailable."); 
-    stop(e);
-  })
-  
-  return(response)
-      
-}
 
-.parseJSON <- function(response) {
-  
-  # validate json
-  if (validate(response)) {
-    json_response <- jsonlite::fromJSON(response)
-    if("exception" %in% names(json_response))
-      stop(json_response)
-    return(json_response)
-  }
-  else
-    stop(response)
-  
-}
+
+

@@ -10,27 +10,24 @@ library(changepoint)
 library(wtss)
 
 # create a connection using a serverUrl
-server <-  wtss::WTSS("hhttp://www.esensing.dpi.inpe.br/wtss/")
+server <-  wtss::WTSS("http://www.esensing.dpi.inpe.br/wtss/")
 
 # get the list of coverages provided by the service
-coverages <- wtss::listCoverages(server)
+coverages <- wtss::list_coverages(server)
 
 # get the description of the MOD13Q1 coverage
-cv  <- describeCoverage(server, "MOD13Q1")
+cv  <- describe_coverage(server, "MOD13Q1")
 
 # Get a time seriesfor the "ndvi" attribute
-ndvi <- wtss::timeSeries(server, "MOD13Q1", attributes=c("ndvi"), 
+ndvi <- wtss::time_series(server, "MOD13Q1", attributes=c("ndvi"), 
                          latitude=-10.408, longitude=-53.495, 
                          start="2000-02-18", end="2016-01-01")
 
 # transform time series to the TS format
-interval <- as.numeric(difftime(zoo::index(ndvi$MOD13Q1$attributes[2]),zoo::index(ndvi$MOD13Q1$attributes[1]),units = "days"))
-start_date <- lubridate::decimal_date(lubridate::ymd(index(ndvi$MOD13Q1$attributes[1])))
-
-ndvi_ts <- ts(zoo::coredata(ndvi$MOD13Q1$attributes[,"ndvi"]), freq=365.25/interval, start= start_date)
+ndvi_ts <- wtss::wtss_to_ts(ndvi)
 
 # break point detection analysis 
-ansmeanvar = changepoint::cpt.meanvar(zoo::coredata(ndvi_ts)[!is.na(zoo::coredata(ndvi))])
+cpt_meanvar = changepoint::cpt.meanvar(ndvi_ts)
 
 # break point in a line plot
-plot(ansmeanvar)
+plot(cpt_meanvar)
